@@ -1,0 +1,40 @@
+run:
+  name: demo_lenet_cpu_2k
+  seed: 42
+  device: cpu
+  artifacts_dir: artifacts
+
+data:
+  dataset: cats_vs_dogs
+  data_dir: data
+  image_size: [128, 128]
+  channels: 3
+  limit_total: 2000          # total images across both classes
+  train_split: 0.80
+  val_split: 0.20
+  shuffle: true
+
+train:
+  arch: lenet
+  epochs: 3
+  batch_size: 32
+  learning_rate: 0.001
+  early_stopping: false
+
+features:
+  cut_layer: conv2           # or the actual layer name in your model
+  pooling: global_avg        # makes features fixed-size
+
+rf:
+  n_estimators: 300
+  max_depth: null
+  random_state: 42
+
+baseline_rf:
+  enabled: true
+  pca_components: 200
+
+report:
+  enabled: true
+  save_markdown: true
+  save_plots: true
