@@ -1,1 +1,55 @@
-autokeras_cnn_dogcat_optimizer_1747273110/trial_1/checkpoint.weights.h5
+# Data and artifacts
+data/
+artifacts/
+airflow/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Model checkpoints (keep only in artifacts/)
+*.h5
+*.keras
+*.pkl
+*.npz
+*.ckpt
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache

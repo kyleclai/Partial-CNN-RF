@@ -1,0 +1,40 @@
+run:
+  name: full_vgg16_gpu
+  seed: 42
+  device: auto  # 'auto', 'cpu', or 'gpu'
+  artifacts_dir: artifacts
+
+data:
+  dataset: cats_vs_dogs
+  data_dir: data
+  image_size: [128, 128]
+  channels: 3
+  limit_total: null  # null = use all data
+  train_split: 0.70
+  val_split: 0.20
+  test_split: 0.10
+  shuffle: true
+
+train:
+  arch: vgg16  # 'vgg16' or 'lenet'
+  epochs: 10
+  batch_size: 32
+  learning_rate: 0.0001  # Lower LR for transfer learning
+
+features:
+  extract_all_layers: true
+  pooling: null  # null = use raw layer outputs
+
+rf:
+  n_estimators: 300
+  max_depth: null  # null = unlimited depth
+  random_state: 42
+
+baseline_rf:
+  enabled: true
+  pca_components: 200
+
+report:
+  enabled: true
+  save_markdown: true
+  save_plots: true
