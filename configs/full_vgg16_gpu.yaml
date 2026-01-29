@@ -1,7 +1,7 @@
 run:
   name: full_vgg16_gpu
   seed: 42
-  device: auto  # 'auto', 'cpu', or 'gpu'
+  device: auto
   artifacts_dir: artifacts
 
 data:
@@ -9,25 +9,25 @@ data:
   data_dir: data
   image_size: [128, 128]
   channels: 3
-  limit_total: null  # null = use all data
+  limit_total: null
   train_split: 0.70
   val_split: 0.20
   test_split: 0.10
   shuffle: true
 
 train:
-  arch: vgg16  # 'vgg16' or 'lenet'
-  epochs: 10
+  arch: vgg16
+  epochs: 10  # Increased from 10
   batch_size: 32
-  learning_rate: 0.0001  # Lower LR for transfer learning
+  learning_rate: 0.001  # Increased from 0.0001 for unfrozen base
 
 features:
-  extract_all_layers: true
-  pooling: null  # null = use raw layer outputs
+  extract_all_layers: false  # Changed to false, using strategic layers
+  pooling: null
 
 rf:
   n_estimators: 300
-  max_depth: null  # null = unlimited depth
+  max_depth: null
   random_state: 42
 
 baseline_rf:

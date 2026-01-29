@@ -1,5 +1,6 @@
 """
 Extract features from all CNN layers and save as .npz files.
+Uses streaming to avoid RAM exhaustion.
 """
 
 import argparse
@@ -7,16 +8,13 @@ import yaml
 import numpy as np
 from pathlib import Path
 import tensorflow as tf
-from utils.model_builders import get_all_layer_names, create_feature_extractor
-from utils.data_loaders import load_split_as_numpy
+from utils.model_builders import create_feature_extractor, get_strategic_vgg16_layers, get_all_layer_names
+from utils.data_loaders import create_tf_dataset
 from utils.seeds import set_global_seed, configure_gpu
 
 
 def flatten_features(features):
-    """
-    Flatten 4D tensor (N, H, W, C) to 2D (N, H*W*C).
-    Handles already-flat features gracefully.
-    """
+    """Flatten 4D tensor (N, H, W, C) to 2D (N, H*W*C)."""
     if features.ndim == 2:
         return features
     elif features.ndim == 4:
@@ -24,6 +22,50 @@ def flatten_features(features):
         return features.reshape(n_samples, -1)
     else:
         raise ValueError(f"Unexpected feature dimensionality: {features.ndim}D")
+
+
+def extract_features_streaming(extractor, dataset, total_samples, extraction_batch_size=8):
+    """
+    Extract features using tf.data pipeline (no RAM loading).
+    
+    Args:
+        extractor: Feature extractor model
+        dataset: tf.data.Dataset yielding (images, labels)
+        total_samples: Total number of samples for progress tracking
+        extraction_batch_size: Batch size for extraction
+    
+    Returns:
+        features (ndarray), labels (ndarray)
+    """
+    feature_batches = []
+    label_batches = []
+    processed = 0
+    
+    for batch_images, batch_labels in dataset:
+        # Extract features for this batch
+        batch_features = extractor.predict(batch_images, verbose=0)
+        
+        feature_batches.append(batch_features)
+        label_batches.append(batch_labels.numpy())
+        
+        processed += len(batch_labels)
+        if len(feature_batches) % 100 == 0:
+            print(f"  Processed {processed}/{total_samples} samples", end='\r')
+    
+    print(f"  Processed {total_samples}/{total_samples} samples")
+    
+    # Concatenate all batches
+    all_features = np.concatenate(feature_batches, axis=0)
+    all_labels = np.concatenate(label_batches, axis=0)
+    
+    return all_features, all_labels
+
+
+def get_split_size(metadata_path, split):
+    """Count samples in a split without loading images."""
+    import pandas as pd
+    df = pd.read_csv(metadata_path)
+    return len(df[df['split'] == split])
 
 
 def main(config_path):
@@ -49,16 +91,24 @@ def main(config_path):
     print(f"Loading trained model from {model_path}")
     model = tf.keras.models.load_model(model_path)
     
-    # Get all extractable layers
-    layer_names = get_all_layer_names(model)
-    print(f"\nFound {len(layer_names)} layers for extraction:")
+    # Get strategic layers based on architecture
+    if arch == 'vgg16':
+        layer_names = get_strategic_vgg16_layers()
+        print(f"\nUsing {len(layer_names)} strategic VGG16 conv block endpoints:")
+        extraction_batch_size = 8  # Small batches for VGG16
+    else:
+        layer_names = get_all_layer_names(model)
+        print(f"\nFound {len(layer_names)} layers for extraction:")
+        extraction_batch_size = 32  # LeNet can use larger batches
+    
     for i, name in enumerate(layer_names):
         print(f"  {i+1}. {name}")
     
-    # Load data
+    print(f"\nUsing extraction batch size: {extraction_batch_size}")
+    
+    # Paths
     metadata_path = Path(config['data']['data_dir']) / 'metadata.csv'
     img_size = tuple(config['data']['image_size'])
-    batch_size = config['train']['batch_size']
     
     # Extract features for each split
     for split in ['train', 'val', 'test']:
@@ -66,10 +116,17 @@ def main(config_path):
         print(f"Processing {split} split")
         print('='*60)
         
-        # Load images
-        x_data, y_data = load_split_as_numpy(
-            metadata_path, split=split, img_size=img_size,
-            limit=config['data'].get('limit_total'),
+        # Get split size
+        split_size = get_split_size(metadata_path, split)
+        print(f"Split size: {split_size} samples")
+        
+        # Create streaming dataset
+        dataset = create_tf_dataset(
+            metadata_path, 
+            split=split, 
+            img_size=img_size,
+            batch_size=extraction_batch_size,
+            shuffle=False,
             random_state=config['run']['seed']
         )
         
@@ -80,8 +137,10 @@ def main(config_path):
             # Create extractor
             extractor = create_feature_extractor(model, layer_name)
             
-            # Extract features
-            features_raw = extractor.predict(x_data, batch_size=batch_size, verbose=0)
+            # Extract features using streaming
+            features_raw, labels = extract_features_streaming(
+                extractor, dataset, split_size, extraction_batch_size
+            )
             
             # Flatten for RF compatibility
             features_flat = flatten_features(features_raw)
@@ -94,10 +153,17 @@ def main(config_path):
             np.savez_compressed(
                 output_path,
                 features=features_flat,
-                labels=y_data
+                labels=labels
             )
             
             print(f"  Saved to {output_path}")
+            
+            # Clean up
+            del extractor, features_raw, features_flat, labels
+            tf.keras.backend.clear_session()
+        
+        # Recreate dataset for next layer (iterator exhausted)
+        del dataset
     
     print(f"\n{'='*60}")
     print("Feature extraction complete!")

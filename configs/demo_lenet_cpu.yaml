@@ -16,10 +16,10 @@ data:
 
 train:
   arch: lenet
-  epochs: 3
+  epochs: 20
   batch_size: 32
   learning_rate: 0.001
-  early_stopping: false
+  early_stopping: true
 
 features:
   cut_layer: conv2           # or the actual layer name in your model

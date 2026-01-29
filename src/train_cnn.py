@@ -68,6 +68,15 @@ def main(config_path):
     print(f"\nModel architecture: {arch}")
     model.summary()
     
+    callbacks = []
+    if config['train'].get('early_stopping', False):
+        early_stop = tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=3,
+            restore_best_weights=True
+        )
+        callbacks.append(early_stop)
+
     # Train
     print("\nStarting training...")
     start_time = time.time()
@@ -77,6 +86,7 @@ def main(config_path):
         validation_data=(x_val, y_val),
         epochs=config['train']['epochs'],
         batch_size=config['train']['batch_size'],
+        callbacks=callbacks,  # ADD THIS
         verbose=1
     )
     
