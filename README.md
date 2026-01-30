@@ -37,14 +37,26 @@ Interpretation: Intermediate CNN features can improve over a simple RF baseline,
 ## File Structure
 ```.
 ├── dags/                    # Airflow DAG definition
+├── data/                    # Datasets
+│   ├── dogs-vs-cats/        # Dummy data
+│       ├── train/
 ├── src/                     # Pure Python modules (called by Airflow tasks)
-│   ├── ingest.py
+│   ├── utils/
+│       ├── __pycache__/
+│       ├── data_loaders.py
+│       ├── model_builders.py
+│       ├── pooling.py
+│       └── seeds.py
+│   ├── run_pipeline.py
 │   ├── preprocess.py
 │   ├── train_cnn.py
 │   ├── extract_features.py
 │   ├── train_rf.py
 │   └── evaluate.py
 ├── configs/                 # YAML/JSON configs for models + run params
+│   ├── demo_lenet_cpu.yaml
+│   ├── full_vgg16_gpu.yaml
+│   └── full_vgg16_gpu_gap.yaml
 ├── reports/                 # Generated reports (optional)
 ├── artifacts/               # Models/metrics/plots (gitignored)
 ├── requirements.txt
