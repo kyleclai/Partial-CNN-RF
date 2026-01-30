@@ -1,6 +1,6 @@
 """
 Extract features from all CNN layers and save as .npz files.
-Uses streaming to avoid RAM exhaustion.
+Uses streaming + global pooling to handle all layers efficiently.
 """
 
 import argparse
@@ -8,31 +8,21 @@ import yaml
 import numpy as np
 from pathlib import Path
 import tensorflow as tf
-from utils.model_builders import create_feature_extractor, get_strategic_vgg16_layers, get_all_layer_names
+from utils.model_builders import get_all_layer_names, get_all_vgg16_conv_layers#, get_strategic_vgg16_layers
+from utils.pooling import create_feature_extractor_with_pooling
 from utils.data_loaders import create_tf_dataset
 from utils.seeds import set_global_seed, configure_gpu
 
 
-def flatten_features(features):
-    """Flatten 4D tensor (N, H, W, C) to 2D (N, H*W*C)."""
-    if features.ndim == 2:
-        return features
-    elif features.ndim == 4:
-        n_samples = features.shape[0]
-        return features.reshape(n_samples, -1)
-    else:
-        raise ValueError(f"Unexpected feature dimensionality: {features.ndim}D")
-
-
-def extract_features_streaming(extractor, dataset, total_samples, extraction_batch_size=8):
+def extract_features_streaming(extractor, dataset, total_samples):
     """
     Extract features using tf.data pipeline (no RAM loading).
+    Features are already pooled, so no flattening needed.
     
     Args:
-        extractor: Feature extractor model
+        extractor: Feature extractor model (with pooling)
         dataset: tf.data.Dataset yielding (images, labels)
         total_samples: Total number of samples for progress tracking
-        extraction_batch_size: Batch size for extraction
     
     Returns:
         features (ndarray), labels (ndarray)
@@ -42,7 +32,7 @@ def extract_features_streaming(extractor, dataset, total_samples, extraction_bat
     processed = 0
     
     for batch_images, batch_labels in dataset:
-        # Extract features for this batch
+        # Extract features for this batch (already pooled)
         batch_features = extractor.predict(batch_images, verbose=0)
         
         feature_batches.append(batch_features)
@@ -91,18 +81,23 @@ def main(config_path):
     print(f"Loading trained model from {model_path}")
     model = tf.keras.models.load_model(model_path)
     
-    # Get strategic layers based on architecture
+    # Get layer names based on architecture
     if arch == 'vgg16':
-        layer_names = get_strategic_vgg16_layers()
-        print(f"\nUsing {len(layer_names)} strategic VGG16 conv block endpoints:")
-        extraction_batch_size = 8  # Small batches for VGG16
+        layer_names = get_all_vgg16_conv_layers()
+        print(f"\nExtracting from ALL {len(layer_names)} VGG16 conv layers (with GAP):")
+        extraction_batch_size = 32  # Can use larger batches with GAP
+        use_pooling = True
     else:
         layer_names = get_all_layer_names(model)
         print(f"\nFound {len(layer_names)} layers for extraction:")
-        extraction_batch_size = 32  # LeNet can use larger batches
+        extraction_batch_size = 32
+        use_pooling = config.get('features', {}).get('use_global_pooling', False)
     
     for i, name in enumerate(layer_names):
         print(f"  {i+1}. {name}")
+    
+    if use_pooling:
+        print("\n✓ Using Global Average Pooling to reduce feature dimensions")
     
     print(f"\nUsing extraction batch size: {extraction_batch_size}")
     
@@ -134,32 +129,34 @@ def main(config_path):
         for layer_name in layer_names:
             print(f"\nExtracting features from: {layer_name}")
             
-            # Create extractor
-            extractor = create_feature_extractor(model, layer_name)
+            # Create extractor with pooling
+            if use_pooling and arch == 'vgg16':
+                extractor = create_feature_extractor_with_pooling(
+                    model, layer_name, pooling_type='avg'
+                )
+            else:
+                from utils.model_builders import create_feature_extractor
+                extractor = create_feature_extractor(model, layer_name)
             
             # Extract features using streaming
-            features_raw, labels = extract_features_streaming(
-                extractor, dataset, split_size, extraction_batch_size
+            features, labels = extract_features_streaming(
+                extractor, dataset, split_size
             )
             
-            # Flatten for RF compatibility
-            features_flat = flatten_features(features_raw)
-            
-            print(f"  Raw shape: {features_raw.shape}")
-            print(f"  Flattened shape: {features_flat.shape}")
+            print(f"  Feature shape: {features.shape}")
             
             # Save as compressed NPZ
             output_path = features_dir / f'{split}_{layer_name}_features.npz'
             np.savez_compressed(
                 output_path,
-                features=features_flat,
+                features=features,
                 labels=labels
             )
             
             print(f"  Saved to {output_path}")
             
             # Clean up
-            del extractor, features_raw, features_flat, labels
+            del extractor, features, labels
             tf.keras.backend.clear_session()
         
         # Recreate dataset for next layer (iterator exhausted)

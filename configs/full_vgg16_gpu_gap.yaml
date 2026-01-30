@@ -1,0 +1,40 @@
+run:
+  name: full_vgg16_gpu_gap
+  seed: 42
+  device: auto
+  artifacts_dir: artifacts
+
+data:
+  dataset: cats_vs_dogs
+  data_dir: data
+  image_size: [128, 128] # use 224x224 (original dim of ImagnNet crops), optimal spatial richness
+  channels: 3
+  limit_total: null  # Use full dataset
+  train_split: 0.70
+  val_split: 0.20
+  test_split: 0.10
+  shuffle: true
+
+train:
+  arch: vgg16
+  epochs: 20
+  batch_size: 32
+  learning_rate: 0.001 # 1e-4 / 1e-5 for more finetuning
+  early_stopping: true
+
+features:
+  use_global_pooling: true  # collapses spatial info for cleaner features for RF / early-exit compute needs. strong regularization, less overfitting.
+
+rf:
+  n_estimators: 300
+  max_depth: null
+  random_state: 42
+
+baseline_rf:
+  enabled: true
+  pca_components: 200
+
+report:
+  enabled: true
+  save_markdown: true
+  save_plots: true

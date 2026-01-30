@@ -4,7 +4,7 @@ Supports VGG16 (pretrained ImageNet) and LeNet (from scratch).
 """
 
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from keras import layers, models
 
 
 def build_vgg16(input_shape=(128, 128, 3), num_classes=1, freeze_base=True):
@@ -26,7 +26,7 @@ def build_vgg16(input_shape=(128, 128, 3), num_classes=1, freeze_base=True):
         input_shape=input_shape
     )
     
-    # Freeze convolutional layers for transfer learning (optional, can make false)
+    # Freeze convolutional layers for transfer learning
     base_model.trainable = not freeze_base
     
     # Build full model with custom classification head
@@ -96,21 +96,46 @@ def get_all_layer_names(model):
     ]
 
 
-def get_strategic_vgg16_layers():
+# def get_strategic_vgg16_layers():
+#     """
+#     Return strategic VGG16 convolutional block endpoints for feature extraction.
+#     These correspond to the end of each major conv block before pooling.
+    
+#     Returns:
+#         List of layer names: ['block1_conv2', 'block2_conv2', 'block3_conv3', 
+#                                'block4_conv3', 'block5_conv3']
+#     """
+#     return [
+#         # 'block1_conv2',  # 64 filters, large spatial resolution
+#         # 'block2_conv2',  # 128 filters
+#         'block3_conv3',  # 256 filters
+#         'block4_conv3',  # 512 filters
+#         'block5_conv3',  # 512 filters, most abstract
+#     ]
+
+
+def get_all_vgg16_conv_layers():
     """
-    Return strategic VGG16 convolutional block endpoints for feature extraction.
-    These correspond to the end of each major conv block before pooling.
+    Return ALL VGG16 convolutional layer names for comprehensive analysis.
+    With GAP, we can now extract from all 13 conv layers without OOM.
     
     Returns:
-        List of layer names: ['block1_conv2', 'block2_conv2', 'block3_conv3', 
-                               'block4_conv3', 'block5_conv3']
+        List of all conv layer names in VGG16
     """
     return [
-        # 'block1_conv2',  # 64 filters, large spatial resolution
-        # 'block2_conv2',  # 128 filters
+        'block1_conv1',  # 64 filters
+        'block1_conv2',  # 64 filters
+        'block2_conv1',  # 128 filters
+        'block2_conv2',  # 128 filters
+        'block3_conv1',  # 256 filters
+        'block3_conv2',  # 256 filters
         'block3_conv3',  # 256 filters
+        'block4_conv1',  # 512 filters
+        'block4_conv2',  # 512 filters
         'block4_conv3',  # 512 filters
-        'block5_conv3',  # 512 filters, most abstract
+        'block5_conv1',  # 512 filters
+        'block5_conv2',  # 512 filters
+        'block5_conv3',  # 512 filters
     ]
 
 
