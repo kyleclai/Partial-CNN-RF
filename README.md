@@ -16,6 +16,8 @@ This project explores a compute-aware alternative to full CNN inference: train a
 - Experiment design: layer-wise feature extraction at configurable cut points
 - Dataset: Public dataset ([Cats vs Dogs] or your chosen public source)
 
+**[ToDo: Make VGG16 CSV akin to InceptionV3 Inference CSV](https://docs.google.com/spreadsheets/d/1quvbLjKlESu--7Vh5U4s5ZChmjYwV-1sWoylQEz4egU/edit?pli=1&gid=1121146955#gid=1121146955)**
+
 ## Why this exists
 
 In applied settings (edge devices, embedded vision, constrained environments), full CNN inference may be too slow or too costly. This repo tests the hypothesis:
@@ -75,6 +77,11 @@ Artifacts are saved per run (models, metrics JSON, plots).
 | **LeNet Full Network** | 63.4% | 0.625 | 20% |
 
 *Relative inference time vs VGG16 full network
+
+<!--
+VGG16 Full Network: 180.93198442459106
+
+-->
 
 ### Confusion Matrices
 
