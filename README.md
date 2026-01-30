@@ -37,14 +37,26 @@ Interpretation: Intermediate CNN features can improve over a simple RF baseline,
 ## File Structure
 ```.
 ├── dags/                    # Airflow DAG definition
+├── data/                    # Datasets
+│   ├── dogs-vs-cats/        # Dummy data
+│       ├── train/
 ├── src/                     # Pure Python modules (called by Airflow tasks)
-│   ├── ingest.py
+│   ├── utils/
+│       ├── __pycache__/
+│       ├── data_loaders.py
+│       ├── model_builders.py
+│       ├── pooling.py
+│       └── seeds.py
+│   ├── run_pipeline.py
 │   ├── preprocess.py
 │   ├── train_cnn.py
 │   ├── extract_features.py
 │   ├── train_rf.py
 │   └── evaluate.py
 ├── configs/                 # YAML/JSON configs for models + run params
+│   ├── demo_lenet_cpu.yaml
+│   ├── full_vgg16_gpu.yaml
+│   └── full_vgg16_gpu_gap.yaml
 ├── reports/                 # Generated reports (optional)
 ├── artifacts/               # Models/metrics/plots (gitignored)
 ├── requirements.txt
@@ -78,7 +90,7 @@ Trigger manually (optionally set params)
 
 ### Option B — Run without Airflow (for quick checks)
 ```
-python src/ingest.py
+python src/run_pipeline.py
 python src/preprocess.py
 python src/train_cnn.py --model lenet
 python src/extract_features.py --cut_layer conv2
@@ -112,10 +124,10 @@ Experiments are controlled via config/params:
 TODO: ADD INFO
 
 ## Contributing
-Fork it!
-Create your feature branch: git checkout -b my-new-feature
-Commit your changes: git commit -am 'Add some feature'
-Push to the branch: git push origin my-new-feature
+Fork it!<br>
+Create your feature branch: git checkout -b my-new-feature<br>
+Commit your changes: git commit -am 'Add some feature'<br>
+Push to the branch: git push origin my-new-feature<br>
 Submit a pull request :D
 
 ## History
@@ -134,3 +146,5 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+https://www.star-history.com/#kyleclai/Partial-CNN-RF&type=date&legend=top-left
