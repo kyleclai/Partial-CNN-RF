@@ -60,6 +60,45 @@ The Airflow DAG runs the experiment end-to-end:
 6. Evaluate + report: compare baselines and write a report artifact
 Artifacts are saved per run (models, metrics JSON, plots).
 
+---
+
+## 📈 Performance Benchmarks
+
+### Test Set Results (Cats vs Dogs, 2,498 samples)
+
+| Model | Accuracy | F1 Score | Inference Time* |
+|-------|----------|----------|-----------------|
+| **VGG16 Full Network** | 88.7% | 0.887 | 100% (baseline) |
+| **VGG16 block5_conv3 + RF** | 87.2% | 0.869 | ~60% |
+| **VGG16 block4_conv3 + RF** | 85.1% | 0.848 | ~45% |
+| **Baseline RF (PCA on pixels)** | 58.3% | 0.571 | ~15% |
+| **LeNet Full Network** | 63.4% | 0.625 | 20% |
+
+*Relative inference time vs VGG16 full network
+
+### Confusion Matrices
+
+<table>
+<tr>
+<td width="50%">
+
+**VGG16 Baseline**
+
+![VGG16 Confusion Matrix](assets/results/confusion_matrix_vgg16.png)
+
+</td>
+<td width="50%">
+
+**LeNet Baseline**
+
+![LeNet Confusion Matrix](assets/results/confusion_matrix_lenet.png)
+
+</td>
+</tr>
+</table>
+
+---
+
 ## Results (example)
 
 > Replace with your real numbers for the public dataset + chosen architecture.
