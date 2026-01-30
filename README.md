@@ -90,7 +90,7 @@ Trigger manually (optionally set params)
 
 ### Option B — Run without Airflow (for quick checks)
 ```
-python src/ingest.py
+python src/run_pipeline.py
 python src/preprocess.py
 python src/train_cnn.py --model lenet
 python src/extract_features.py --cut_layer conv2
