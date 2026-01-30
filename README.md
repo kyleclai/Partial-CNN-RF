@@ -124,10 +124,10 @@ Experiments are controlled via config/params:
 TODO: ADD INFO
 
 ## Contributing
-Fork it!
-Create your feature branch: git checkout -b my-new-feature
-Commit your changes: git commit -am 'Add some feature'
-Push to the branch: git push origin my-new-feature
+Fork it!<br>
+Create your feature branch: git checkout -b my-new-feature<br>
+Commit your changes: git commit -am 'Add some feature'<br>
+Push to the branch: git push origin my-new-feature<br>
 Submit a pull request :D
 
 ## History
