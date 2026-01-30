@@ -1,4 +1,6 @@
-# Project: Early-Exit CNN → Random Forest Pipeline (Airflow-Orchestrated)
+# 🔬 CNN Early-Exit with Random Forest Feature Classification
+
+**Exploring computational efficiency through hybrid CNN-RF architectures**
 
 ## TL;DR
 
@@ -14,6 +16,32 @@ In applied settings (edge devices, embedded vision, constrained environments), f
 > Can intermediate CNN representations serve as a strong feature extractor for a cheaper model (Random Forest), and what accuracy trade-offs appear at different cut layers?
 
 This is a proof-of-concept experiment harness — not a production deployment.
+
+## 🏗️ Architecture
+
+```
+Input Image (128×128×3)
+       ↓
+┌──────────────────┐
+│   VGG16 Base     │
+│  (Pretrained)    │
+└──────────────────┘
+       ↓
+    [Extract at Layer N]  ← Early Exit Point
+       ↓
+┌──────────────────┐
+│ Global Avg Pool  │  (H×W×C → C features)
+└──────────────────┘
+       ↓
+┌──────────────────┐
+│  Random Forest   │  (300 trees)
+│   Classifier     │
+└──────────────────┘
+       ↓
+   Classification
+```
+
+**Key Innovation**: Global Average Pooling (GAP) after each conv layer enables fixed-size feature extraction from any depth, making all 13 VGG16 conv layers viable exit points.
 
 ## What the pipeline does
 
