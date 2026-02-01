@@ -95,20 +95,20 @@ Artifacts are saved per run (models, metrics JSON, plots).
 | Model                       | Accuracy | F1 Score | Inference Time* |
 | --------------------------- | -------- | -------- | --------------- |
 | **VGG16 Full Network**      | 90.31%   | 0.9033   | 100% (baseline) |
-| **VGG16 block5_conv3 + RF** | 86.45%   | 0.8624   | ~99%            |
-| **VGG16 block5_conv2 + RF** | 84.91%   | 0.8466   | ~96%            |
-| **VGG16 block5_conv1 + RF** | 86.11%   | 0.8592   | ~93%            |
-| **VGG16 block4_conv3 + RF** | 84.57%   | 0.8437   | ~90%            |
-| **VGG16 block4_conv2 + RF** | 81.59%   | 0.8124   | ~78%            |
-| **VGG16 block4_conv1 + RF** | 79.25%   | 0.7876   | ~66%            |
-| **VGG16 block3_conv3 + RF** | 77.85%   | 0.7739   | ~60%            |
-| **VGG16 block3_conv2 + RF** | 75.51%   | 0.7501   | ~48%            |
-| **VGG16 block3_conv1 + RF** | 73.58%   | 0.7316   | ~36%            |
-| **VGG16 block2_conv2 + RF** | 71.18%   | 0.7064   | ~30%            |
-| **VGG16 block2_conv1 + RF** | 67.28%   | 0.6667   | ~18%            |
-| **VGG16 block1_conv2 + RF** | 65.02%   | 0.6393   | ~12%            |
-| **Baseline RF (PCA on pixels)** | 63.90% | 0.632 | ~15% |
-| **VGG16 block1_conv1 + RF** | 62.32%   | 0.6052   | ~1%             |
+| **VGG16 block5_conv3 + RF** | 86.47%   | 0.8624   | ~99%            |
+| **VGG16 block5_conv2 + RF** | 85.71%   | 0.8466   | ~96%            |
+| **VGG16 block5_conv1 + RF** | 86.23%   | 0.8592   | ~93%            |
+| **VGG16 block4_conv3 + RF** | 85.35%   | 0.8437   | ~90%            |
+| **VGG16 block4_conv2 + RF** | 83.23%   | 0.8124   | ~78%            |
+| **VGG16 block4_conv1 + RF** | 80.62%   | 0.7876   | ~66%            |
+| **VGG16 block3_conv3 + RF** | 78.30%   | 0.7739   | ~60%            |
+| **VGG16 block3_conv2 + RF** | 76.66%   | 0.7501   | ~48%            |
+| **VGG16 block3_conv1 + RF** | 75.50%   | 0.7316   | ~36%            |
+| **VGG16 block2_conv2 + RF** | 71.34%   | 0.7064   | ~30%            |
+| **VGG16 block2_conv1 + RF** | 66.49%   | 0.6667   | ~18%            |
+| **VGG16 block1_conv2 + RF** | 64.93%   | 0.6393   | ~12%            |
+| **Baseline RF (PCA on pixels)** | 63.73% | 0.632 | ~15% |
+| **VGG16 block1_conv1 + RF** | 61.89%   | 0.6052   | ~1%             |
 
 * *Compute proxy (cumulative MACs/FLOPs), normalized to VGG16 full network.
 * *Relative inference time (compute proxy) vs VGG16 full network (100%).
