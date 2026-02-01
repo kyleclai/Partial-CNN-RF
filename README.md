@@ -152,13 +152,14 @@ VGG16 Full Network: 180.93198442459106
 
 ---
 
-## File Structure
-```.
-├── dags/                    # Airflow DAG definition
-├── data/                    # Datasets
-│   ├── dogs-vs-cats/        # Dummy data
+## 📁 Repository Structure
+```
+.
+├── dags/                        # Airflow DAG definition
+├── data/                        # Datasets
+│   ├── dogs-vs-cats/            # Dummy data
 │       ├── train/
-├── src/                     # Pure Python modules (called by Airflow tasks)
+├── src/                         # Pure Python modules (called by Airflow tasks)
 │   ├── utils/
 │       ├── __pycache__/
 │       ├── data_loaders.py
@@ -171,12 +172,14 @@ VGG16 Full Network: 180.93198442459106
 │   ├── extract_features.py
 │   ├── train_rf.py
 │   └── evaluate.py
-├── configs/                 # YAML/JSON configs for models + run params
-│   ├── demo_lenet_cpu.yaml
-│   ├── full_vgg16_gpu.yaml
+├── configs/                     # YAML/JSON configs for models + run params
+│   ├── demo_lenet_cpu.yaml      # LeNet configuration (CPU demo)
+│   ├── full_vgg16_gpu.yaml      # VGG16 configuration (GPU)
 │   └── full_vgg16_gpu_gap.yaml
-├── reports/                 # Generated reports (optional)
-├── artifacts/               # Models/metrics/plots (gitignored)
+├── assets/
+│   └── results/                 # Generated plots & visualizations
+├── reports/                     # Generated reports (optional)
+├── artifacts/                   # Models/metrics/plots (gitignored)
 ├── requirements.txt
 └── README.md
 ```
@@ -208,12 +211,11 @@ Trigger manually (optionally set params)
 
 ### Option B — Run without Airflow (for quick checks)
 ```
-python src/run_pipeline.py
-python src/preprocess.py
-python src/train_cnn.py --model lenet
-python src/extract_features.py --cut_layer conv2
-python src/train_rf.py
-python src/evaluate.py
+# Download Cats vs Dogs dataset from Kaggle
+# Place in data/dogs-vs-cats/train/
+
+# Run complete workflow (preprocess → train → extract → evaluate)
+python src/run_pipeline.py --config configs/full_vgg16_gpu.yaml
 ```
 
 ## Configuration
@@ -254,15 +256,38 @@ Version 0.1 (2026-01-23) - adding dataset and processing functionalities
 ## Credits
 Lead Developer - Kyle Lai (@kyleclai)
 
-## License
-The MIT License (MIT)
+---
 
-Copyright (c) 2026 Kyle Lai
+## 📄 License
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+MIT License - see LICENSE file for details
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+## 👥 Authors
+
+**Kyle Lai** & **Ruslan Romanenko**  
+*CSS 499 Capstone Research Project*  
+*University of Washington Bothell*
+
+---
+
+## 🙏 Acknowledgments
+
+- Dr. Kim (Research Advisor)
+- UW Bothell CSSBIO Lab (GPU compute resources: 4× NVIDIA RTX A5000)
+- Anthropic Claude (Technical assistance)
+
+---
+
+## 📬 Contact
+
+Questions? Open an issue or reach out via [GitHub](https://github.com/kyleclai)
+
+---
+
+<p align="center">
+  <i>Exploring the intersection of deep learning and interpretable machine learning</i>
+</p>
 
 https://www.star-history.com/#kyleclai/Partial-CNN-RF&type=date&legend=top-left
