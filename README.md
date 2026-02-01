@@ -18,7 +18,7 @@ This project explores a compute-aware alternative to full CNN inference: train a
 
 **[ToDo: Make VGG16 CSV akin to InceptionV3 Inference CSV](https://docs.google.com/spreadsheets/d/1quvbLjKlESu--7Vh5U4s5ZChmjYwV-1sWoylQEz4egU/edit?pli=1&gid=1121146955#gid=1121146955)**
 
-## Why this exists
+## 🎯 Research Question
 
 In applied settings (edge devices, embedded vision, constrained environments), full CNN inference may be too slow or too costly. This repo tests the hypothesis:
 > Can intermediate CNN representations serve as a strong feature extractor for a cheaper model (Random Forest), and what accuracy trade-offs appear at different cut layers?
@@ -34,7 +34,7 @@ This is a proof-of-concept experiment harness — not a production deployment.
 ![VGG16 Accuracy Comparison](assets/results/accuracy_comparison_vgg16.png)
 
 **Finding**: Random Forest achieves **competitive accuracy (75-90%)** when trained on features from VGG16's deeper conv blocks (block3/block4/block5), approaching the full CNN baseline while enabling early-exit strategies.
-* *Hybrid CNN→RF (best intermediate cut): block3_conv3 represents the strongest true early-exit point, retaining ~78% accuracy at ~60% of VGG16 compute, while deeper exits primarily trade efficiency gains for interpretability rather than speed.
+* *Hybrid CNN→RF (best intermediate cut): 
 
 Interpretation: Intermediate CNN features can improve over a simple RF baseline, but still trail full CNN performance on this dataset. This repo is structured to extend experiments across architectures and cut points.
 
@@ -152,6 +152,58 @@ VGG16 Full Network: 180.93198442459106
 
 ---
 
+## 🚀 Quick Start
+
+### Option A — Run via Airflow (recommended)
+
+1) Prerequisites
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+2) Install Airflow
+(Use the official constraints file matching your Airflow + Python versions.) [Airflow 2.9.1 - Python 3.12](https://raw.githubusercontent.com/apache/airflow/constraints-2.9.1/constraints-3.12.txt)
+3) Start Airflow
+```
+export AIRFLOW_HOME=$(pwd)/airflow
+airflow db init
+airflow users create --username admin --firstname Admin --lastname User --role Admin --email you@example.com
+airflow webserver -p 8080
+airflow scheduler
+```
+4) Trigger the DAG
+Open http://localhost:8080
+Enable cnn_rf_feature_pipeline
+Trigger manually (optionally set params)
+
+### Option B — Run without Airflow (for quick checks)
+```
+# Download Cats vs Dogs dataset from Kaggle
+# Place in data/dogs-vs-cats/train/
+
+# Run complete workflow (preprocess → train → extract → evaluate)
+python src/run_pipeline.py --config configs/full_vgg16_gpu.yaml
+```
+
+---
+
+## Configuration
+Experiments are controlled via config/params:
+- `MODEL_ARCH`: `lenet | vgg16 | inceptionv3`
+- `CUT_LAYER`: layer name or index
+- `EPOCHS`, `BATCH_SIZE`, `IMG_SIZE`
+- `SEED` for reproducibility
+
+---
+
+## Notes on reproducibility
+- Uses fixed random seeds where possible.
+- Writes metrics and artifacts per run ID.
+- Dataset is public; no clinical/private data is included.
+
+---
+
 ## 📁 Repository Structure
 ```
 .
@@ -184,76 +236,141 @@ VGG16 Full Network: 180.93198442459106
 └── README.md
 ```
 
-## How to run
+---
 
-### Option A — Run via Airflow (recommended)
+## 🔬 Methodology
 
-1) Create env
-```
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-2) Install Airflow
-(Use the official constraints file matching your Airflow + Python versions.) [Airflow 2.9.1 - Python 3.12](https://raw.githubusercontent.com/apache/airflow/constraints-2.9.1/constraints-3.12.txt)
-3) Start Airflow
-```
-export AIRFLOW_HOME=$(pwd)/airflow
-airflow db init
-airflow users create --username admin --firstname Admin --lastname User --role Admin --email you@example.com
-airflow webserver -p 8080
-airflow scheduler
-```
-4) Trigger the DAG
-Open http://localhost:8080
-Enable cnn_rf_feature_pipeline
-Trigger manually (optionally set params)
+### 1. Feature Extraction Strategy
 
-### Option B — Run without Airflow (for quick checks)
-```
-# Download Cats vs Dogs dataset from Kaggle
-# Place in data/dogs-vs-cats/train/
+**Traditional Approach** (problematic):
+- Extract raw spatial features: `block1_conv2` → 128×128×64 = **1M features per image**
+- Causes memory overflow, impractical for RF
 
-# Run complete workflow (preprocess → train → extract → evaluate)
-python src/run_pipeline.py --config configs/full_vgg16_gpu.yaml
+**Our Approach** (Global Average Pooling):
+- Apply GAP after each layer: `block1_conv2` → GAP → **64 features**
+- Reduces dimensionality while preserving channel-wise information
+- Enables extraction from all 13 VGG16 conv layers
+
+### 2. Random Forest Configuration
+
+```python
+RandomForestClassifier(
+    n_estimators=300,      # 300 decision trees
+    max_depth=None,        # Unlimited depth
+    random_state=42,
+    n_jobs=-1              # Parallel training
+)
 ```
 
-## Configuration
-Experiments are controlled via config/params:
-- `MODEL_ARCH`: `lenet | vgg16 | inceptionv3`
-- `CUT_LAYER`: layer name or index
-- `EPOCHS`, `BATCH_SIZE`, `IMG_SIZE`
-- `SEED` for reproducibility
+### 3. Baseline Comparisons
 
-## What to look at (if you’re reviewing quickly)
-- Airflow DAG: dags/cnn_rf_feature_pipeline.py
-- Feature extraction logic: src/extract_features.py
-- Evaluation + report artifacts: src/evaluate.py + artifacts/
+- **CNN Baseline**: Full VGG16/LeNet with dense layers
+- **RF Baseline**: PCA (200 components) on raw pixels → RF
+- **Hybrid Models**: CNN features (with GAP) → RF
 
-## Notes on reproducibility
-- Uses fixed random seeds where possible.
-- Writes metrics and artifacts per run ID.
-- Dataset is public; no clinical/private data is included.
+---
 
-## Roadmap (optional, keep short)
-- Add support for additional architectures and standardized cut-layer selection
-- Add compute measurement (time per stage, GPU/CPU utilization)
-- Add experiment tracking integration (MLflow / W&B) (optional)
+## 🧪 Experimental Insights
 
-## Installation
-TODO: ADD INFO
+### Finding 1: Feature Maturity Across Depth
 
-## Contributing
-Fork it!<br>
-Create your feature branch: git checkout -b my-new-feature<br>
-Commit your changes: git commit -am 'Add some feature'<br>
-Push to the branch: git push origin my-new-feature<br>
-Submit a pull request :D
+Accuracy increases monotonically from block1 → block5, indicating **progressive feature abstraction**:
+- `block1_conv2` (64 filters): 65% accuracy
+- `block3_conv3` (256 filters): 78% accuracy  
+- `block5_conv3` (512 filters): 86% accuracy
 
+### Finding 2: Optimal Early-Exit Point
+
+**block3_conv3** offers the best accuracy/efficiency trade-off:
+- Only **12% accuracy drop** vs full network
+- **~40% reduction** in FLOPs (skips dense layers)
+- Enables SHAP/LIME interpretability via RF
+
+### Finding 3: GAP is Essential
+
+Without GAP, early layer extraction is infeasible:
+- `block1_conv2` raw: **1M features** → OOM
+- `block1_conv2` + GAP: **64 features** → Manageable
+
+---
+
+## 💡 Future Directions
+
+### Interpretability Analysis
+- [ ] Apply SHAP to RF models to visualize which CNN features drive classification
+- [ ] Compare feature importance across different extraction depths
+- [ ] standardized cut-layer selection
+- [ ] Add compute measurement (time per stage, GPU/CPU utilization)
+
+### Embedded Deployment
+- [ ] Model quantization (INT8) for edge devices
+- [ ] Benchmark inference on Raspberry Pi / Jetson Nano
+- [ ] Adaptive early-exit based on confidence thresholds
+- [ ] Add experiment tracking integration (MLflow / W&B) (optional)
+
+### Bioinformatics Application
+- [ ] Replace image data with tabular gene expression data
+- [ ] Test hypothesis: CNN feature extraction + RF classification for high-dimensional bio-data
+
+---
+
+## 📊 Dataset
+
+**Cats vs Dogs** (Kaggle)
+- 25,000 labeled images (12,500 cats, 12,500 dogs)
+- Train/Val/Test: 70/20/10 split
+- Preprocessing: Resize to 128×128, normalize to [0,1]
+
+---
+
+## 🛠️ Technical Details
+
+### GPU Memory Management
+- Uses TensorFlow's `tf.data` streaming to avoid loading full dataset into RAM
+- Batch size: 32 for VGG16, 8 for early layer extraction
+- Global Average Pooling reduces memory footprint by 1000x
+
+### Reproducibility
+- Fixed random seeds: Python, NumPy, TensorFlow
+- Deterministic operations enabled
+- All configs version-controlled
+
+### Performance Optimizations
+- Multi-threaded data loading (`tf.data.AUTOTUNE`)
+- Compiled models for faster inference
+- Incremental feature extraction to prevent OOM
+
+---
+
+## 📚 References
+
+This work builds on:
+
+1. **Bacterial Spore Segmentation**: Qamar et al. (2023) - Hybrid CNN-RF for TEM images
+2. **Burned Area Detection**: Sudiana et al. (2023) - CNN-RF for SAR data fusion  
+3. **CAD Diagnosis**: Khozeimeh et al. (2022) - RF-CNN-F for medical imaging
+
+See `Final_Research_Report.pdf` for full literature review.
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Areas of interest:
+- Additional CNN architectures (ResNet, EfficientNet)
+- Alternative ensemble methods (XGBoost, LightGBM)
+- Deployment optimizations
+- Interpretability visualizations
+
+---
 ## History
-Version 0.1 (2026-01-23) - adding dataset and processing functionalities
+
+Version 0.2 (2026-02-01) - added results & metrics, experimental thought-processes, & next steps
+
+---
 
 ## Credits
+
 Lead Developer - Kyle Lai (@kyleclai)
 
 ---
