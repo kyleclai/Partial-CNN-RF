@@ -25,6 +25,25 @@ In applied settings (edge devices, embedded vision, constrained environments), f
 
 This is a proof-of-concept experiment harness — not a production deployment.
 
+## 📊 Key Results
+
+> Our hybrid CNN→RF approach demonstrates that **intermediate convolutional features can rival full network performance** while enabling earlier computational exit points.
+
+### VGG16 Feature Evolution Across Layers
+
+![VGG16 Accuracy Comparison](assets/results/accuracy_comparison_vgg16.png)
+
+**Finding**: Random Forest achieves **competitive accuracy (75-90%)** when trained on features from VGG16's deeper conv blocks (block3/block4/block5), approaching the full CNN baseline while enabling early-exit strategies.
+* *Hybrid CNN→RF (best intermediate cut): block3_conv3 represents the strongest true early-exit point, retaining ~78% accuracy at ~60% of VGG16 compute, while deeper exits primarily trade efficiency gains for interpretability rather than speed.
+
+Interpretation: Intermediate CNN features can improve over a simple RF baseline, but still trail full CNN performance on this dataset. This repo is structured to extend experiments across architectures and cut points.
+
+### LeNet Feature Progression
+
+![LeNet Accuracy Comparison](assets/results/accuracy_comparison_lenet.png)
+
+---
+
 ## 🏗️ Architecture
 
 ```
@@ -51,6 +70,8 @@ Input Image (128×128×3)
 
 **Key Innovation**: Global Average Pooling (GAP) after each conv layer enables fixed-size feature extraction from any depth, making all 13 VGG16 conv layers viable exit points.
 
+---
+
 ## What the pipeline does
 
 The Airflow DAG runs the experiment end-to-end:
@@ -68,6 +89,35 @@ Artifacts are saved per run (models, metrics JSON, plots).
 
 ### Test Set Results (Cats vs Dogs, 2,498 samples)
 
+**Assumption:** VGG16 input size is **128×128**, with standard VGG16 pooling (128→64→32→16→8→4).<br>
+**Inference Time*** is **cumulative VGG16 compute up to the exit layer** (conv MACs) divided by **full VGG16 compute** (conv + dense head), expressed as a percent.
+
+| Model                       | Accuracy | F1 Score | Inference Time* |
+| --------------------------- | -------- | -------- | --------------- |
+| **VGG16 Full Network**      | 90.31%   | 0.9033   | 100% (baseline) |
+| **VGG16 block5_conv3 + RF** | 86.45%   | 0.8624   | ~99%            |
+| **VGG16 block5_conv2 + RF** | 84.91%   | 0.8466   | ~96%            |
+| **VGG16 block5_conv1 + RF** | 86.11%   | 0.8592   | ~93%            |
+| **VGG16 block4_conv3 + RF** | 84.57%   | 0.8437   | ~90%            |
+| **VGG16 block4_conv2 + RF** | 81.59%   | 0.8124   | ~78%            |
+| **VGG16 block4_conv1 + RF** | 79.25%   | 0.7876   | ~66%            |
+| **VGG16 block3_conv3 + RF** | 77.85%   | 0.7739   | ~60%            |
+| **VGG16 block3_conv2 + RF** | 75.51%   | 0.7501   | ~48%            |
+| **VGG16 block3_conv1 + RF** | 73.58%   | 0.7316   | ~36%            |
+| **VGG16 block2_conv2 + RF** | 71.18%   | 0.7064   | ~30%            |
+| **VGG16 block2_conv1 + RF** | 67.28%   | 0.6667   | ~18%            |
+| **VGG16 block1_conv2 + RF** | 65.02%   | 0.6393   | ~12%            |
+| **Baseline RF (PCA on pixels)** | 63.90% | 0.632 | ~15% |
+| **VGG16 block1_conv1 + RF** | 62.32%   | 0.6052   | ~1%             |
+
+* *Compute proxy (cumulative MACs/FLOPs), normalized to VGG16 full network.
+* *Relative inference time (compute proxy) vs VGG16 full network (100%).
+
+<!--
+VGG16 Full Network: 180.93198442459106
+-->
+
+<!--
 | Model | Accuracy | F1 Score | Inference Time* |
 |-------|----------|----------|-----------------|
 | **VGG16 Full Network** | 88.7% | 0.887 | 100% (baseline) |
@@ -77,10 +127,6 @@ Artifacts are saved per run (models, metrics JSON, plots).
 | **LeNet Full Network** | 63.4% | 0.625 | 20% |
 
 *Relative inference time vs VGG16 full network
-
-<!--
-VGG16 Full Network: 180.93198442459106
-
 -->
 
 ### Confusion Matrices
@@ -105,14 +151,6 @@ VGG16 Full Network: 180.93198442459106
 </table>
 
 ---
-
-## Results (example)
-
-> Replace with your real numbers for the public dataset + chosen architecture.
-- RF baseline (PCA on raw images): ~63% validation accuracy
-- CNN baseline (LeNet-style): ~81% validation accuracy
-- Hybrid CNN→RF (best intermediate cut): ~71% validation accuracy
-Interpretation: Intermediate CNN features can improve over a simple RF baseline, but still trail full CNN performance on this dataset. This repo is structured to extend experiments across architectures and cut points.
 
 ## File Structure
 ```.
