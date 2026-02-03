@@ -16,6 +16,7 @@ This project explores a compute-aware alternative to full CNN inference: train a
 - Experiment design: layer-wise feature extraction at configurable cut points
 - Dataset: Public dataset ([Cats vs Dogs] or your chosen public source)
 
+**[Airflow Struggles](https://stackoverflow.com/questions/38992997/dag-not-visible-in-web-ui)**
 **[ToDo: Make VGG16 CSV akin to InceptionV3 Inference CSV](https://docs.google.com/spreadsheets/d/1quvbLjKlESu--7Vh5U4s5ZChmjYwV-1sWoylQEz4egU/edit?pli=1&gid=1121146955#gid=1121146955)**
 
 ## 🎯 Research Question
