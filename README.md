@@ -18,6 +18,10 @@ This project explores a compute-aware alternative to full CNN inference: train a
 
 **[Airflow Struggles](https://stackoverflow.com/questions/38992997/dag-not-visible-in-web-ui)**
 **[ToDo: Make VGG16 CSV akin to InceptionV3 Inference CSV](https://docs.google.com/spreadsheets/d/1quvbLjKlESu--7Vh5U4s5ZChmjYwV-1sWoylQEz4egU/edit?pli=1&gid=1121146955#gid=1121146955)**
+**ToDo: Explore other interpretability methods for smaller devices
+- [Kaggle Model: GraDcam w/ VGG16 & Xception](https://www.kaggle.com/code/gowrishankarin/gradcam-model-interpretability-vgg16-xception)
+- [Types of CNN architecture diagrams](https://cv-tricks.com/cnn/understand-resnet-alexnet-vgg-inception/)
+- [C/C of NN Architectures](https://medium.com/@muradatcorvit23/comparison-and-architecture-of-pre-trained-models-alexnet-vgg-16-vgg-19-resnet-googlenet-05f83214fc47)**
 
 ## 🎯 Research Question
 
