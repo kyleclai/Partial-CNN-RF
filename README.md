@@ -4,6 +4,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.19-orange.svg)](https://www.tensorflow.org/)
+[![Airflow](https://img.shields.io/badge/Airflow-2.9.1-darkgreen.svg)](https://github.com/apache/airflow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -11,7 +12,7 @@
 ## TL;DR
 
 This project explores a compute-aware alternative to full CNN inference: train a Random Forest on intermediate CNN feature maps (“early-exit”) and compare performance against (1) RF baseline and (2) full CNN baseline. The workflow is orchestrated as an Apache Airflow DAG to ensure reproducible, modular experiments.
-- Orchestration: [Apache Airflow](https://github.com/apache/airflow)
+- Orchestration: Apache Airflow
 - Modeling: TensorFlow/Keras (CNN), scikit-learn (Random Forest)
 - Experiment design: layer-wise feature extraction at configurable cut points
 - Dataset: Public dataset ([Cats vs Dogs] or your chosen public source)
