@@ -1,0 +1,38 @@
+run:
+  name: imp_vgg16
+  seed: 42
+  device: auto
+  artifacts_dir: artifacts
+
+data:
+  data_dir: data
+  image_size: [128, 128]
+  channels: 3
+  limit_total: null   # full 25K dataset
+  train_split: 0.70
+  val_split: 0.20
+
+train:
+  arch: vgg16
+  epochs_per_round: 10
+  batch_size: 32
+  learning_rate: 0.001
+  early_stopping: false
+
+imp:
+  # VGG16: only prune Dense classification head (frozen conv base stays intact)
+  prunable_layers: [fc1, fc2, output]
+  prune_rate_per_round: 0.20   # prune 20% of remaining active weights per round
+  num_rounds: 10
+  target_sparsity: 0.90        # stop early if global sparsity exceeds 90%
+  results_dir: explorations/lottery_ticket/results/vgg16
+
+flops:
+  # Frozen VGG16 conv base FLOPs at 128×128 input (constant across rounds).
+  # Derived from: 14 conv layers × avg FLOPs per layer at 128×128 resolution.
+  include_frozen_base: true
+  vgg16_base_flops: 14714734080   # ~14.7 GFLOPs
+
+report:
+  compare_with_hybrid_pipeline: true
+  hybrid_pipeline_metrics_path: artifacts/full_vgg16_gpu/test_metrics.json

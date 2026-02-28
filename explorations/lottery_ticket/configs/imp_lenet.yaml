@@ -1,0 +1,39 @@
+run:
+  name: imp_lenet
+  seed: 42
+  device: cpu
+  artifacts_dir: artifacts
+
+data:
+  data_dir: data
+  image_size: [128, 128]
+  channels: 3
+  limit_total: 2000    # 2K subset for fast iteration
+  train_split: 0.70
+  val_split: 0.20
+
+train:
+  arch: lenet
+  epochs_per_round: 20   # LeNet needs more epochs; dataset is smaller
+  batch_size: 32
+  learning_rate: 0.001
+  early_stopping: false
+
+imp:
+  # LeNet: prune all trainable layers (cleaner winning ticket demonstration)
+  prunable_layers: [conv_1, conv_2, dense_1, dense_2, output]
+  prune_rate_per_round: 0.20   # prune 20% of remaining active weights per round
+  num_rounds: 10
+  target_sparsity: 0.90        # stop early if global sparsity exceeds 90%
+  results_dir: explorations/lottery_ticket/results/lenet
+
+  # Note on sparsity distribution:
+  # dense_1 kernel shape is (flat_input × 120) ≈ 1.73M params at 128×128 input.
+  # This dominates global pruning — expect ~99% of pruning to concentrate in dense_1.
+  # This is an important finding to highlight in the writeup.
+
+flops:
+  include_frozen_base: false   # LeNet has no frozen base
+
+report:
+  compare_with_hybrid_pipeline: false

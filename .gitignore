@@ -3,6 +3,7 @@ data/
 artifacts/
 airflow/
 og_cnn_lenet/
+reports/
 
 # Python
 __pycache__/
