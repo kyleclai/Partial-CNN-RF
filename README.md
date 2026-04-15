@@ -4,6 +4,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.19-orange.svg)](https://www.tensorflow.org/)
+[![Airflow](https://img.shields.io/badge/Airflow-2.9.1-darkgreen.svg)](https://github.com/apache/airflow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -11,12 +12,10 @@
 ## TL;DR
 
 This project explores a compute-aware alternative to full CNN inference: train a Random Forest on intermediate CNN feature maps (“early-exit”) and compare performance against (1) RF baseline and (2) full CNN baseline. The workflow is orchestrated as an Apache Airflow DAG to ensure reproducible, modular experiments.
-- Orchestration: [Apache Airflow](https://github.com/apache/airflow)
+- Orchestration: Apache Airflow
 - Modeling: TensorFlow/Keras (CNN), scikit-learn (Random Forest)
 - Experiment design: layer-wise feature extraction at configurable cut points
 - Dataset: Public dataset ([Cats vs Dogs] or your chosen public source)
-
-**[ToDo: Make VGG16 CSV akin to InceptionV3 Inference CSV](https://docs.google.com/spreadsheets/d/1quvbLjKlESu--7Vh5U4s5ZChmjYwV-1sWoylQEz4egU/edit?pli=1&gid=1121146955#gid=1121146955)**
 
 ## 🎯 Research Question
 
@@ -46,28 +45,92 @@ This is a proof-of-concept experiment harness — not a production deployment.
 ## 🏗️ Architecture
 
 ```
-Input Image (128×128×3)
-       ↓
-┌──────────────────┐
-│   VGG16 Base     │
-│  (Pretrained)    │
-└──────────────────┘
-       ↓
-    [Extract at Layer N]  ← Early Exit Point
-       ↓
-┌──────────────────┐
-│ Global Avg Pool  │  (H×W×C → C features)
-└──────────────────┘
-       ↓
-┌──────────────────┐
-│  Random Forest   │  (300 trees)
-│   Classifier     │
-└──────────────────┘
-       ↓
-   Classification
+Input Image
+(128 × 128 × 3)
+        ↓
+┌───────────────────────────────────────┐
+│         VGG16 (pretrained)            │
+│                                       │
+│  block1_conv1  →  128 × 128 ×  64    │
+│  block1_conv2  →  128 × 128 ×  64    │
+│       [MaxPool] →  64 ×  64 ×  64    │
+│  block2_conv1  →   64 ×  64 × 128    │
+│  block2_conv2  →   64 ×  64 × 128    │
+│       [MaxPool] →  32 ×  32 × 128    │
+│  block3_conv1  →   32 ×  32 × 256    │
+│  block3_conv2  →   32 ×  32 × 256    │
+│  block3_conv3  →   32 ×  32 × 256    │
+│       [MaxPool] →  16 ×  16 × 256    │
+│  block4_conv1  →   16 ×  16 × 512    │
+│  block4_conv2  →   16 ×  16 × 512    │
+│  block4_conv3  →   16 ×  16 × 512    │
+│       [MaxPool] →   8 ×   8 × 512    │
+│  block5_conv1  →    8 ×   8 × 512    │
+│  block5_conv2  →    8 ×   8 × 512    │
+│  block5_conv3  →    4 ×   4 × 512  ← Exit point (Spring 2026) │
+│       [MaxPool] →   2 ×   2 × 512    │
+└───────────────────────────────────────┘
+        ↓  [at block5_conv3: 4 × 4 × 512]
+┌───────────────────────────────────────┐
+│     Global Average Pooling (GAP)      │
+│     4 × 4 × 512  →  1 × 512          │
+└───────────────────────────────────────┘
+        ↓  feature vector (1 × 512)
+        ├──────────────────────────────────────────┐
+        ↓                                          ↓
+┌──────────────────────┐       ┌──────────────────────────────────┐
+│   Random Forest      │       │   Interpretability Inspector     │
+│   (300 trees)        │       │   ibioml.uwb.edu:8065/           │
+│   → Cat / Dog        │       │   CSV: 1,500 × 513               │
+└──────────────────────┘       │   (feature_1…512 + target)       │
+                               │   → Which CNN features matter?   │
+                               └──────────────────────────────────┘
 ```
 
 **Key Innovation**: Global Average Pooling (GAP) after each conv layer enables fixed-size feature extraction from any depth, making all 13 VGG16 conv layers viable exit points.
+
+---
+
+## 🔍 Spring 2026: Interpretability Task
+
+### Goal
+
+Export the data at the step **right before the Random Forest** — the GAP-pooled CNN feature
+vector (1 × 512 per image) — as a CSV and upload it to the ML Studio interpretability
+inspector at ibioml.uwb.edu:8065/.
+
+The inspector identifies which of the 512 learned CNN features contribute most to classifying
+cats vs dogs, giving an explainable window into what the CNN actually learned.
+
+### Why This Matters
+
+Without interpretability, the CNN→RF pipeline is a black box. By exporting the features at
+the RF's input boundary, we can ask: *which VGG16 filters fire most distinctly for cats vs dogs?*
+This bridges deep feature extraction with human-interpretable analysis.
+
+### Pipeline
+
+```
+Image → VGG16 (block5_conv3) → GAP → feature vector (1 × 512) → CSV row
+                                                                        ↓
+                                              interpretability_features.csv
+                                              Shape: 1,500 rows × 513 cols
+                                              (750 cats + 750 dogs, balanced)
+                                              Size: ~6.9 MB
+```
+
+**Script:** `src/export_for_interpretability.py`
+**Output:** `artifacts/spring2026_cnn_rf_comparison/interpretability_features.csv`
+
+### Current Status
+
+| Step | Status |
+|------|--------|
+| Export script written | Done |
+| CSV generated (6.9 MB, 1500 × 513) | Done |
+| Visualization pair saved (`sample_pair_cnn_gap.png`) | Done |
+| Inspector upload | Blocked — server bug being fixed by advisor |
+| Interpret + document results | Pending |
 
 ---
 
@@ -222,11 +285,13 @@ Experiments are controlled via config/params:
 │   ├── train_cnn.py
 │   ├── extract_features.py
 │   ├── train_rf.py
-│   └── evaluate.py
+│   ├── evaluate.py
+│   └── export_for_interpretability.py  # CNN→GAP→CSV for inspector (Spring 2026)
 ├── configs/                     # YAML/JSON configs for models + run params
 │   ├── demo_lenet_cpu.yaml      # LeNet configuration (CPU demo)
 │   ├── full_vgg16_gpu.yaml      # VGG16 configuration (GPU)
-│   └── full_vgg16_gpu_gap.yaml
+│   ├── full_vgg16_gpu_gap.yaml
+│   └── spring2026_cnn_rf.yaml   # Spring 2026 run config (GPU1, interpretability)
 ├── assets/
 │   └── results/                 # Generated plots & visualizations
 ├── reports/                     # Generated reports (optional)
@@ -293,15 +358,24 @@ Without GAP, early layer extraction is infeasible:
 
 ---
 
-## 💡 Future Directions
+## 💡 Progress & Future Directions
 
-### Interpretability Analysis
+### Spring 2026 — Interpretability (In Progress)
+- [x] Export script: `src/export_for_interpretability.py` — CNN→GAP→CSV
+- [x] Config: `configs/spring2026_cnn_rf.yaml` (GPU1, 128×128, 750 samples/class)
+- [x] Generated `interpretability_features.csv` — 1,500 rows × 513 cols, 6.9 MB
+- [x] Visualization: `sample_pair_cnn_gap.png` (original image vs GAP activations)
+- [ ] Inspector upload — blocked: server bug being fixed by advisor
+- [ ] CNN-only vs CNN-RF baseline comparison (10-layer base vs 9-layer ablation)
+- [ ] Capture + document interpretability output from inspector
+- [ ] Write up findings
+
+### Interpretability (Deeper)
 - [ ] Apply SHAP to RF models to visualize which CNN features drive classification
 - [ ] Compare feature importance across different extraction depths
-- [ ] standardized cut-layer selection
-- [ ] Add compute measurement (time per stage, GPU/CPU utilization)
+- [ ] Standardized cut-layer selection criteria
 
-### Embedded Deployment
+### Embedded Deployment (Deferred — not this quarter)
 - [ ] Model quantization (INT8) for edge devices
 - [ ] Benchmark inference on Raspberry Pi / Jetson Nano
 - [ ] Adaptive early-exit based on confidence thresholds
@@ -328,6 +402,10 @@ Without GAP, early layer extraction is infeasible:
 - Uses TensorFlow's `tf.data` streaming to avoid loading full dataset into RAM
 - Batch size: 32 for VGG16, 8 for early layer extraction
 - Global Average Pooling reduces memory footprint by 1000x
+
+> **Note:** GPU0 is reserved by the lab web application (ibioml.uwb.edu:8065/).
+> All training and inference must target GPU1+. Enforced via `CUDA_VISIBLE_DEVICES=1`
+> at the top of `export_for_interpretability.py` and all Spring 2026 run configs.
 
 ### Reproducibility
 - Fixed random seeds: Python, NumPy, TensorFlow
@@ -363,6 +441,8 @@ Contributions welcome! Areas of interest:
 
 ---
 ## History
+
+Version 0.3 (2026-04-15) - Spring 2026 interpretability task: CNN→GAP export pipeline, inspector integration (in progress), expanded architecture diagram with full tensor dimensions, updated checklist
 
 Version 0.2 (2026-02-01) - added results & metrics, experimental thought-processes, & next steps
 
